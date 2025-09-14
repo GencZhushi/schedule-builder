@@ -1,10 +1,11 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import pandas as pd
 import os
 import uuid
+import sqlite3
 from datetime import datetime
 from app.models.lecture import Lecture
 from app.models.department import Department
@@ -49,6 +50,10 @@ database_service = DatabaseService()
 export_service = ExportService(time_slot_service)
 conflict_detector = ConflictDetector(time_slot_service)
 
+# Create standard time slots on startup if none exist
+if len(time_slot_service.get_all_time_slots()) == 0:
+    time_slot_service.create_standard_time_slots()
+
 # In-memory storage for parsed data
 parsed_data_storage = {}
 generated_schedules = []
@@ -65,6 +70,9 @@ async def upload_schedule_file(file: UploadFile = File(...)):
     """
     try:
         # Generate unique filename
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="File name is missing")
+        
         file_extension = file.filename.split('.')[-1]
         unique_filename = f"{uuid.uuid4()}.{file_extension}"
         file_path = f"uploads/{unique_filename}"
@@ -207,6 +215,46 @@ def delete_time_slot(time_slot_id: str):
         raise HTTPException(status_code=404, detail="Time slot not found")
     return {"message": "Time slot deleted successfully"}
 
+# Add new API endpoints for lecture management
+@app.put("/api/lectures/{lecture_id}")
+def update_lecture(lecture_id: str, lecture: Lecture):
+    """
+    Update an existing lecture
+    """
+    # Update in database
+    success = database_service.save_lecture(lecture)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to update lecture")
+    
+    # Update in memory storage if it exists
+    for session_id, session_data in parsed_data_storage.items():
+        lectures = session_data.get("lectures", [])
+        for i, existing_lecture in enumerate(lectures):
+            if existing_lecture.id == lecture_id:
+                lectures[i] = lecture
+                break
+    
+    return {"message": "Lecture updated successfully", "lecture": lecture}
+
+@app.delete("/api/lectures/{lecture_id}")
+def delete_lecture(lecture_id: str):
+    """
+    Delete a lecture
+    """
+    # Delete from database
+    conn = sqlite3.connect(database_service.db_path)
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM lectures WHERE id = ?', (lecture_id,))
+    conn.commit()
+    conn.close()
+    
+    # Delete from memory storage if it exists
+    for session_id, session_data in parsed_data_storage.items():
+        lectures = session_data.get("lectures", [])
+        session_data["lectures"] = [l for l in lectures if l.id != lecture_id]
+    
+    return {"message": "Lecture deleted successfully"}
+
 @app.post("/api/schedule/generate/{session_id}")
 def generate_schedule(session_id: str):
     """
@@ -297,7 +345,7 @@ def get_schedule_dashboard(session_id: str):
     return dashboard_data
 
 @app.post("/api/schedule/save-version")
-def save_schedule_version(version_name: str = None):
+def save_schedule_version(version_name: Optional[str] = None):
     """
     Save current schedule as a version
     """
@@ -305,7 +353,7 @@ def save_schedule_version(version_name: str = None):
         raise HTTPException(status_code=400, detail="No schedule to save")
     
     # Save to database
-    success = database_service.save_schedule_version(generated_schedules, version_name)
+    success = database_service.save_schedule_version(generated_schedules, version_name or "")
     
     if success:
         return {"message": "Schedule version saved successfully"}

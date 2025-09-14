@@ -7,13 +7,13 @@ from app.models.subgroup import Subgroup
 class DataValidatorService:
     def __init__(self):
         # Define valid department codes
-        self.valid_departments = ['AEM', 'EK', 'BF', 'MXH', 'Kon']
+        self.valid_departments = ['AEM', 'EK', 'BF', 'MXH', 'Kon', 'MK']
         
         # Define valid academic levels
         self.valid_levels = ['Bachelor', 'Master', 'Baçelor']  # Including the typo from docs
         
         # Define valid academic years
-        self.valid_years = ['VITI I', 'VITI II']
+        self.valid_years = ['VITI I', 'VITI II', 'VITI III']
         
         # Define valid lecture types
         self.valid_lecture_types = ['L', 'U']
@@ -25,7 +25,7 @@ class DataValidatorService:
         self.valid_instructor_types = ['P', 'A']
         
         # Define valid lecture durations
-        self.valid_durations = [45, 90, 135]
+        self.valid_durations = [44, 45, 89, 90, 135]
 
     def validate_all_data(self, parsed_data: Dict[str, Any]) -> Dict[str, Any]:
         """

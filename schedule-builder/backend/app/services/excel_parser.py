@@ -15,13 +15,13 @@ class ExcelParserService:
         ]
         
         # Define valid department codes
-        self.valid_departments = ['AEM', 'EK', 'BF', 'MXH', 'Kon']
+        self.valid_departments = ['AEM', 'EK', 'BF', 'MXH', 'Kon', 'MK']
         
         # Define valid academic levels
         self.valid_levels = ['Bachelor', 'Master', 'Baçelor']  # Including the typo from docs
         
         # Define valid academic years
-        self.valid_years = ['VITI I', 'VITI II']
+        self.valid_years = ['VITI I', 'VITI II', 'VITI III']
         
         # Define valid lecture types
         self.valid_lecture_types = ['L', 'U']
@@ -33,7 +33,7 @@ class ExcelParserService:
         self.valid_instructor_types = ['P', 'A']
         
         # Define valid lecture durations
-        self.valid_durations = [45, 90, 135]
+        self.valid_durations = [44, 45, 89, 90, 135]
 
     def parse_excel_file(self, file_path: str) -> Dict[str, Any]:
         """

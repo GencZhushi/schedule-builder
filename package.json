@@ -1,5 +1,11 @@
 {
+  "scripts": {
+    "dev": "start setup-and-start.bat",
+    "start": "concurrently \"cd schedule-builder/backend && python start_server.py\" \"cd schedule-builder/frontend && npm start\"",
+    "setup": "cd schedule-builder/backend && pip install -r requirements.txt && cd ..\\.. && cd schedule-builder/frontend && npm install && cd ..\\.."
+  },
   "dependencies": {
+    "concurrently": "^7.6.0",
     "react-scripts": "^5.0.1",
     "web-vitals": "^5.1.0"
   }
